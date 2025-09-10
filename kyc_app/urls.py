@@ -9,4 +9,6 @@ urlpatterns = [
     path('user/<int:user_id>/', views.get_user, name='get_user'),
     path('csrf/', views.get_csrf_token, name='get_csrf_token'),
     path('test/', views.test_view, name='test'),
+    path("register_page/", views.register_page, name="register_page"),
+    path("profile/", views.profile_view, name="profile_page"),
 ]

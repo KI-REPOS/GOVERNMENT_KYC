@@ -6,45 +6,53 @@ import json
 from datetime import datetime
 
 class JSONEncoder(json.JSONEncoder):
+    """Custom JSON Encoder to handle ObjectId and datetime"""
     def default(self, o):
         if isinstance(o, ObjectId):
             return str(o)
         if isinstance(o, datetime):
             return o.isoformat()
-        return json.JSONEncoder.default(self, o)
+        return super().default(o)
+
 
 def get_mongo_client():
-    """Get MongoDB client connection"""
-    mongo_uri = os.environ.get('DATABASE_URL', 'mongodb://localhost:27017/')
+    """Get MongoDB client connection using MONGODB_URI"""
+    mongo_uri = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/')
     try:
         client = MongoClient(mongo_uri)
         # Test the connection
         client.admin.command('ping')
-        print("Successfully connected to MongoDB!")
+        print("✅ Successfully connected to MongoDB!")
         return client
     except Exception as e:
-        print(f"Error connecting to MongoDB: {e}")
+        print(f"❌ Error connecting to MongoDB: {e}")
         raise e
+
 
 def get_mongo_database():
     """Get MongoDB database instance"""
     client = get_mongo_client()
-    # Extract database name from URI or use default
-    mongo_uri = os.environ.get('DATABASE_URL', 'mongodb://localhost:27017/gov_kyc_db')
+    mongo_uri = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/gov_kyc_db')
+
+    # Extract database name from URI or fallback
     db_name = mongo_uri.split('/')[-1].split('?')[0]
-    if not db_name or db_name == '':
+    if not db_name:
         db_name = 'gov_kyc_db'
+
+    print(f"📂 Using MongoDB database: {db_name}")
     return client[db_name]
+
 
 def get_mongo_collection(collection_name='users'):
     """Get MongoDB collection instance"""
     database = get_mongo_database()
     return database[collection_name]
 
+
 def create_user_in_mongo(gov_id, first_name, last_name, email, photo_data, embedding):
     """Create a user document in MongoDB"""
     collection = get_mongo_collection()
-    
+
     user_data = {
         'gov_id': gov_id,
         'first_name': first_name,
@@ -56,14 +64,16 @@ def create_user_in_mongo(gov_id, first_name, last_name, email, photo_data, embed
         'created_at': datetime.utcnow(),
         'updated_at': datetime.utcnow()
     }
-    
+
     result = collection.insert_one(user_data)
+    print(f"✅ User created with _id: {result.inserted_id}")
     return str(result.inserted_id)
+
 
 def get_user_from_mongo(gov_id=None, mongo_id=None):
     """Get user data from MongoDB"""
     collection = get_mongo_collection()
-    
+
     query = {}
     if gov_id:
         query['gov_id'] = gov_id
@@ -71,16 +81,17 @@ def get_user_from_mongo(gov_id=None, mongo_id=None):
         query['_id'] = ObjectId(mongo_id)
     else:
         return None
-    
+
     user_data = collection.find_one(query)
     if user_data:
         user_data['_id'] = str(user_data['_id'])  # Convert ObjectId to string
     return user_data
 
+
 def update_user_wallet(gov_id, wallet_address):
     """Update user's wallet address in MongoDB"""
     collection = get_mongo_collection()
-    
+
     result = collection.update_one(
         {'gov_id': gov_id},
         {'$set': {
@@ -88,5 +99,10 @@ def update_user_wallet(gov_id, wallet_address):
             'updated_at': datetime.utcnow()
         }}
     )
-    
-    return result.modified_count > 0
+
+    if result.modified_count > 0:
+        print(f"✅ Wallet updated for gov_id: {gov_id}")
+        return True
+    else:
+        print(f"⚠️ No wallet updated for gov_id: {gov_id}")
+        return False
