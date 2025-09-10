@@ -11,6 +11,7 @@ from django.middleware.csrf import get_token
 from django.utils import timezone
 from .models import User, APIToken
 from .mongo_utils import create_user_in_mongo, get_user_from_mongo, update_user_wallet , get_mongo_client
+from datetime import timedelta  
 
 # Get CSRF token
 @csrf_exempt
