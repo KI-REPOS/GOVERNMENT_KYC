@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.middleware.csrf import get_token
 from django.utils import timezone
 from .models import User, APIToken
-from .mongo_utils import create_user_in_mongo, get_user_from_mongo, update_user_wallet
+from .mongo_utils import create_user_in_mongo, get_user_from_mongo, update_user_wallet , get_mongo_client
 
 # Get CSRF token
 @csrf_exempt
@@ -209,3 +209,12 @@ def register_page(request):
 
 def test_view(request):
     return HttpResponse("Django is working! If you see this, the server is running correctly.")
+
+def test_mongo(request):
+    try:
+        client = get_mongo_client()
+        # Test connection
+        client.admin.command('ping')
+        return JsonResponse({'status': 'success', 'message': 'MongoDB connected!'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
