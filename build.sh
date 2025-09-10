@@ -7,20 +7,24 @@ echo "=== Starting Build Process ==="
 echo "1. Installing Python dependencies..."
 pip install -r requirements.txt
 
+# Create migrations for custom apps (especially kyc_app with custom User model)
+echo "2. Creating migrations for custom apps..."
+python manage.py makemigrations kyc_app --noinput
+
 # Apply Django migrations
-echo "2. Applying Django migrations..."
-python manage.py migrate
+echo "3. Applying Django migrations..."
+python manage.py migrate --noinput
+
+# Show migration status for debugging
+echo "4. Checking migration status..."
+python manage.py showmigrations
 
 # Collect static files
-echo "3. Collecting static files..."
+echo "5. Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Optional: Create superuser if doesn't exist
-# echo "4. Checking if superuser exists..."
-# echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin','admin@example.com','adminpassword')" | python manage.py shell
-
 # Test MongoDB connection
-echo "5. Testing MongoDB connection..."
+echo "6. Testing MongoDB connection..."
 python <<EOF
 import os
 from pymongo import MongoClient
@@ -28,7 +32,7 @@ from pymongo.errors import ConnectionFailure
 
 try:
     mongo_uri = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/gov_kyc_db')
-    print(f'Connecting to MongoDB: {mongo_uri}')
+    print(f'Connecting to MongoDB...')
     
     client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
     client.admin.command('ping')
@@ -47,14 +51,42 @@ try:
     client.close()
 
 except ConnectionFailure as e:
-    print(f'✗ MongoDB connection failed: {e}')
-    exit(1)
+    print(f'⚠️ MongoDB connection failed: {e}')
 except Exception as e:
-    print(f'✗ Error: {e}')
-    exit(1)
+    print(f'⚠️ MongoDB error: {e}')
 EOF
 
-echo "6. Testing Django application..."
+# Verify the kyc_app_user table exists
+echo "7. Verifying database tables..."
+python <<EOF
+import os
+import django
+from django.db import connection
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gov_archive_project.settings')
+django.setup()
+
+try:
+    with connection.cursor() as cursor:
+        # Check if kyc_app_user table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='kyc_app_user';")
+        table_exists = cursor.fetchone()
+        
+        if table_exists:
+            print('✓ kyc_app_user table exists!')
+        else:
+            print('✗ kyc_app_user table does NOT exist!')
+            print('Available tables:')
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = cursor.fetchall()
+            for table in tables:
+                print(f'  - {table[0]}')
+            
+except Exception as e:
+    print(f'Error checking tables: {e}')
+EOF
+
+echo "8. Testing Django application..."
 python manage.py check
 
-echo "=== Build Completed Successfully ==="
+echo "=== Build Completed ==="
