@@ -11,4 +11,5 @@ urlpatterns = [
     path('test/', views.test_view, name='test'),
     path("register_page/", views.register_page, name="register_page"),
     path("profile/", views.profile_view, name="profile_page"),
+    path('test-mongo/', views.test_mongo, name='test_mongo'),
 ]

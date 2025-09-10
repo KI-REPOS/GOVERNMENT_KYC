@@ -262,15 +262,16 @@
     </footer>
 
     <!-- Load face-api.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
-    
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>-->
+         <script src="/static/js/tf.min.js"></script>
+        <script src="/static/js/face-api.min.js"></script>
     <script>
         // Global variables
         let faceEmbedding = null;
         let photoData = null;
         
-        // Initialize face-api.js
+        // Initialize  face-api.js
         async function loadModels() {
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('/static/models/tiny_face_detector'); // /static/models/face_landmark_68
@@ -283,6 +284,20 @@
                 showMessage('Error loading face recognition models', 'error');
             }
         }
+
+        // async function loadModels() {
+        //     try {
+        //         // Use CDN models to test if your other code works
+        //         await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
+        //         await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
+        //         await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
+        //         await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
+        //         console.log('CDN Models loaded successfully');
+        //     } catch (error) {
+        //         console.error('Error loading CDN models:', error);
+        //         showMessage('Error loading face recognition models', 'error');
+        //     }
+        // }
         
         // Start webcam
         async function startVideo() {
